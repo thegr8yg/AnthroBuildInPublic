@@ -138,7 +138,7 @@ export async function GET() {
 
     for (const page of data.results ?? []) {
       const props = page.properties ?? {};
-      const title = readTitle(pickProperty(props, ["Name", "Title", "Task"]));
+      const title = readTitle(pickProperty(props, ["Name", "Title", "Task", "Task (public)"]));
       if (!title) continue;
 
       const statusRaw = readSelect(pickProperty(props, ["Status", "Bucket", "State", "Stage"]));
