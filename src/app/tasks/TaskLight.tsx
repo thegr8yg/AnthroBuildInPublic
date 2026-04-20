@@ -24,20 +24,20 @@ type ApiResponse = {
 };
 
 const BUCKETS: Bucket[] = [
-  { id: "side", label: "Side projects", note: "parking lot" },
-  { id: "todo", label: "To do", note: "queued" },
-  { id: "urgent", label: "Urgent", note: "this week" },
-  { id: "progress", label: "In progress", note: "being built" },
-  { id: "complete", label: "Complete", note: "shipped" },
+  { id: "side", label: "Daydream", note: "parking lot" },
+  { id: "todo", label: "On deck", note: "queued" },
+  { id: "urgent", label: "On fire", note: "this week" },
+  { id: "progress", label: "Cooking", note: "being built" },
+  { id: "complete", label: "Shipped", note: "out the door" },
 ];
 
-const DAYS = 30;
+const DAYS = 7;
 const BUCKET_LABEL: Record<BucketId, string> = {
-  side: "Side projects",
-  todo: "To do",
-  urgent: "Urgent",
-  progress: "In progress",
-  complete: "Complete",
+  side: "Daydream",
+  todo: "On deck",
+  urgent: "On fire",
+  progress: "Cooking",
+  complete: "Shipped",
 };
 
 function startOfDay(ms: number): number {
@@ -110,6 +110,41 @@ export default function TaskLight() {
     return () => clearInterval(id);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+    const root = document.documentElement;
+    let targetX = 12;
+    let targetY = 0;
+    let curX = 12;
+    let curY = 0;
+    let raf = 0;
+
+    const onMove = (e: MouseEvent) => {
+      const px = e.clientX / window.innerWidth;
+      const py = e.clientY / window.innerHeight;
+      targetX = 6 + px * 14;
+      targetY = -2 + py * 16;
+    };
+
+    const tick = () => {
+      curX += (targetX - curX) * 0.08;
+      curY += (targetY - curY) * 0.08;
+      root.style.setProperty("--aurora-x", `${curX.toFixed(2)}%`);
+      root.style.setProperty("--aurora-y", `${curY.toFixed(2)}%`);
+      raf = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("mousemove", onMove, { passive: true });
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   const recent = useMemo(() => {
     return [...tasks]
       .sort(
@@ -163,6 +198,7 @@ export default function TaskLight() {
 
   return (
     <>
+      <div className="aurora" aria-hidden />
       <div className="page">
         <header className="top">
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -193,7 +229,6 @@ export default function TaskLight() {
           <h1>
             Building <em>in public.</em>
           </h1>
-          <div className="sub">NOTION → WEB · UPDATES EVERY 30s</div>
         </div>
 
         {loaded && configured === false && (
@@ -293,7 +328,7 @@ export default function TaskLight() {
                   fontWeight: 500,
                 }}
               >
-                LAST 30 DAYS · ROLLING
+                LAST 7 DAYS · ROLLING
               </div>
             </div>
             <div className="legend">
@@ -316,7 +351,7 @@ export default function TaskLight() {
               <div className="n">
                 <em>{kpis.completed30}</em>
               </div>
-              <div className="l">Completed · 30d</div>
+              <div className="l">Completed · 7d</div>
             </div>
             <div className="kpi">
               <div className="n">
