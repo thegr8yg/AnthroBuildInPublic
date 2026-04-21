@@ -23,15 +23,15 @@ type ApiResponse = {
   error?: string;
 };
 
-const BUCKETS: Bucket[] = [
-  { id: "side", label: "Daydream", note: "parking lot" },
+const MAIN_BUCKETS: Bucket[] = [
   { id: "todo", label: "On deck", note: "queued" },
   { id: "urgent", label: "On fire", note: "this week" },
   { id: "progress", label: "Cooking", note: "being built" },
   { id: "complete", label: "Shipped", note: "out the door" },
 ];
 
-const DAYS = 7;
+const SIDE_BUCKET: Bucket = { id: "side", label: "Daydream", note: "parking lot" };
+
 const BUCKET_LABEL: Record<BucketId, string> = {
   side: "Daydream",
   todo: "On deck",
@@ -39,12 +39,6 @@ const BUCKET_LABEL: Record<BucketId, string> = {
   progress: "Cooking",
   complete: "Shipped",
 };
-
-function startOfDay(ms: number): number {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
 
 function verbFor(bucket: BucketId): string {
   switch (bucket) {
@@ -153,47 +147,6 @@ export default function TaskLight() {
       .slice(0, 5);
   }, [tasks]);
 
-  const bars = useMemo(() => {
-    const started = new Array<number>(DAYS).fill(0);
-    const done = new Array<number>(DAYS).fill(0);
-    const todayStart = startOfDay(Date.now());
-    for (const t of tasks) {
-      const c = startOfDay(new Date(t.createdAt).getTime());
-      const csIdx = Math.floor((c - todayStart) / 86400000) + (DAYS - 1);
-      if (csIdx >= 0 && csIdx < DAYS) started[csIdx]++;
-      if (t.bucket === "complete") {
-        const e = startOfDay(new Date(t.lastEdited).getTime());
-        const dIdx = Math.floor((e - todayStart) / 86400000) + (DAYS - 1);
-        if (dIdx >= 0 && dIdx < DAYS) done[dIdx]++;
-      }
-    }
-    return { started, done };
-  }, [tasks]);
-
-  const maxV = Math.max(1, ...bars.started, ...bars.done);
-
-  const axis = useMemo(() => {
-    const now = new Date();
-    const out: string[] = [];
-    for (let i = 0; i < DAYS; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - (DAYS - 1 - i));
-      out.push(`${d.getMonth() + 1}/${d.getDate()}`);
-    }
-    return out;
-  }, []);
-
-  const kpis = useMemo(() => {
-    const completed30 = bars.done.reduce((a, b) => a + b, 0);
-    const velocity = (completed30 / DAYS).toFixed(1);
-    let streak = 0;
-    for (let i = DAYS - 1; i >= 0; i--) {
-      if (bars.done[i] > 0) streak++;
-      else break;
-    }
-    return { completed30, velocity, streak };
-  }, [bars]);
-
   const tick = recent.length > 0 ? recent[tickIdx % recent.length] : null;
 
   return (
@@ -201,35 +154,15 @@ export default function TaskLight() {
       <div className="aurora" aria-hidden />
       <div className="page">
         <header className="top">
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div className="brand">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/anthrolytic-wordmark.png" alt="Anthrolytic" />
-            </div>
-            <div className="live">
-              <span className="dot"></span>
-              <span>
-                Live from our Notion · Synced {syncAgoLabel(lastSync)} ago
-              </span>
-            </div>
+          <div className="brand">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/anthrolytic-wordmark.png" alt="Anthrolytic" />
           </div>
-          <div className="header-right">
-            <div className="desc">
-              The most public build anyone has ever attempted.
-              <br />
-              We ship out loud. This board is our actual Notion, mirrored here in real time.
-              <br />
-              <br />
-              <b>Follow along.</b>
-            </div>
+          <div className="live">
+            <span className="dot"></span>
+            <span>Live · Synced {syncAgoLabel(lastSync)} ago</span>
           </div>
         </header>
-
-        <div className="kicker">
-          <h1>
-            Building <em>in public.</em>
-          </h1>
-        </div>
 
         {loaded && configured === false && (
           <div
@@ -265,11 +198,13 @@ export default function TaskLight() {
           </div>
         )}
 
+        <div className="board-head">
+          <h1>To do</h1>
+        </div>
+
         <div className="board">
-          {BUCKETS.map((b) => {
+          {MAIN_BUCKETS.map((b) => {
             const items = tasks.filter((t) => t.bucket === b.id);
-            const total = Math.max(1, tasks.length);
-            const pct = Math.round((items.length / total) * 100);
             const fill = tasks.length === 0 ? 0 : Math.min(90, 12 + items.length * 9);
             return (
               <div key={b.id} className="col" data-bucket={b.id}>
@@ -304,99 +239,35 @@ export default function TaskLight() {
                     </div>
                   ))}
                 </div>
-                <div className="col-foot">
-                  <span>{b.note}</span>
-                  <span className="pct">{tasks.length === 0 ? "—" : `${pct}%`}</span>
-                </div>
               </div>
             );
           })}
         </div>
 
-        <section className="chart-wrap">
-          <div className="chart-head">
-            <div>
-              <h2>Tasks completed</h2>
-              <div
-                style={{
-                  fontFamily: "var(--font-inter), sans-serif",
-                  fontSize: 11,
-                  color: "var(--ink-3)",
-                  marginTop: 6,
-                  letterSpacing: ".08em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                LAST 7 DAYS · ROLLING
-              </div>
-            </div>
-            <div className="legend">
-              <span>
-                <span className="sw" style={{ background: "var(--purple-200)" }}></span>
-                Started
-              </span>
-              <span>
-                <span className="sw" style={{ background: "var(--purple)" }}></span>
-                Completed
-              </span>
-              <span>
-                <span className="sw" style={{ background: "var(--ink)" }}></span>
-                Today
-              </span>
-            </div>
+        <section className="cta-wrap">
+          <a className="cta" href="https://anthrolytic.co">
+            Learn more <span className="cta-arrow" aria-hidden>»</span>{" "}
+            <span className="cta-url">anthrolytic.co</span>
+          </a>
+        </section>
+
+        <section className="daydream">
+          <div className="daydream-head">
+            <h3>{SIDE_BUCKET.label}</h3>
+            <span className="daydream-note">{SIDE_BUCKET.note}</span>
           </div>
-          <div className="kpis">
-            <div className="kpi">
-              <div className="n">
-                <em>{kpis.completed30}</em>
-              </div>
-              <div className="l">Completed · 7d</div>
-            </div>
-            <div className="kpi">
-              <div className="n">
-                {kpis.velocity}
-                <span style={{ color: "var(--ink-3)", fontSize: 22, fontWeight: 500 }}> /day</span>
-              </div>
-              <div className="l">Average velocity</div>
-            </div>
-            <div className="kpi">
-              <div className="n">{tasks.filter((t) => t.bucket !== "complete").length}</div>
-              <div className="l">Open tasks</div>
-            </div>
-            <div className="kpi">
-              <div className="n">{kpis.streak}</div>
-              <div className="l">Day streak</div>
-            </div>
-          </div>
-          <div className="chart">
-            <div className="grid">
-              <i></i>
-              <i></i>
-              <i></i>
-              <i></i>
-              <i></i>
-            </div>
-            <div className="bars">
-              {Array.from({ length: DAYS }).map((_, i) => {
-                const h = (bars.started[i] / maxV) * 100;
-                const hd = (bars.done[i] / maxV) * 100;
-                return (
-                  <div key={i} className="bar">
-                    <div className="tip">
-                      {bars.done[i]} done · {bars.started[i]} started
-                    </div>
-                    <div className="seg" style={{ height: `${h - hd}%` }}></div>
-                    <div className="seg done" style={{ height: `${hd}%` }}></div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="xaxis">
-            {axis.map((d, i) => (
-              <span key={i}>{d}</span>
-            ))}
+          <div className="daydream-list">
+            {tasks.filter((t) => t.bucket === "side").length === 0 ? (
+              <span className="daydream-empty">Nothing parked.</span>
+            ) : (
+              tasks
+                .filter((t) => t.bucket === "side")
+                .map((t) => (
+                  <span key={t.id} className="daydream-chip">
+                    {t.t}
+                  </span>
+                ))
+            )}
           </div>
         </section>
 
