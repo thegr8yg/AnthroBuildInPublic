@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AnthroBuildInPublic — Decision Log</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; color: #1a1a1a; background: #fafafa; }
+  h1 { font-size: 28px; border-bottom: 2px solid #5B21B6; padding-bottom: 8px; }
+  h2 { font-size: 18px; margin-top: 32px; color: #5B21B6; }
+  .date { color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .decision { background: #fff; border: 1px solid #ececee; border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+  .made { border-left: 4px solid #22c55e; }
+  .notmade { border-left: 4px solid #ef4444; opacity: 0.85; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; background: #f5f3ff; color: #5B21B6; font-weight: 600; margin-right: 6px; }
+  .reason { color: #3f3f46; font-size: 14px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<h1>AnthroBuildInPublic — Decision Log</h1>
+<p class="date">22 May 2026</p>
+<p>This file is a hidden artifact. It is not linked from the site and exists only in the repo. It records every design and architectural decision made (or explicitly rejected) during the retention/audacity redesign.</p>
+
+<h2>Decisions Made</h2>
+
+<div class="decision made">
+  <span class="tag">THEME</span>
+  <strong>5 theme variants from 4 perspectives</strong>
+  <div class="reason">
+    1. <strong>Aurora</strong> (derived from original): Keeps the purple aurora but amplifies it with bolder typography, tighter spacing, and a floating glassmorphism ticker. This is the default.<br>
+    2. <strong>Editorial</strong>: High-contrast serif/display pairing, magazine-style grid, massive whitespace, task cards feel like editorial blocks. Perspective = content-first typography.<br>
+    3. <strong>Brutalist</strong>: 1px black borders, no border-radius, system monospace font, raw checkboxes, exposed metadata. Perspective = anti-design/raw authenticity.<br>
+    4. <strong>Midnight</strong>: Deep dark canvas, reduced chrome, purple glow accents only on hover. Perspective = immersive focus/night-mode.<br>
+    5. <strong>Kinetic</strong>: Cards float with subtle parallax, smooth scroll snapping, animated gradients. Perspective = motion and liveliness.
+  </div>
+</div>
+
+<div class="decision made">
+  <span class="tag">MOBILE</span>
+  <strong>Horizontal scroll-snap carousel for buckets on mobile</strong>
+  <div class="reason">On screens below 640px the 4-column board collapses to a single full-width carousel with CSS scroll-snap-type. Each bucket is a "slide". This preserves the spatial metaphor of columns while respecting narrow viewports. Auto-hide scrollbar, snap to start, next/prev optional dots.</div>
+</div>
+
+<div class="decision made">
+  <span class="tag">RETENTION</span>
+  <strong>Email capture popup overlay</strong>
+  <div class="reason">A modal appears after 8s of engagement (or on first visit) offering to join the build-in-public email list. Dismissal is stored in localStorage for 14 days. Uses a soft backdrop blur and a single email input. This is intentionally lightweight so it does not fight the minimalist ethos.</div>
+</div>
+
+<div class="decision made">
+  <span class="tag">SUPABASE</span>
+  <strong>Scaffolded /api/subscribe route + Supabase client stub</strong>
+  <div class="reason">The user explicitly asked to scaffold but not implement the Supabase connection. Created a POST route that validates email format and returns a friendly "not configured yet" message. The Supabase client initialization is commented out with instructions. This lets the user plug in credentials later.</div>
+</div>
+
+<div class="decision made">
+  <span class="tag">NOTION</span>
+  <strong>Preserve existing Notion integration, add visual polish</strong>
+  <div class="reason">The existing /api/tasks route is robust. We kept it as-is but added a small Notion attribution link in the footer and a "Synced from Notion" tooltip on the live badge. This reinforces trust in the real-time mirror without adding clutter.</div>
+</div>
+
+<div class="decision made">
+  <span class="tag">AUDACITY</span>
+  <strong>Added theme switcher, bolder hero, animated gradient text</strong>
+  <div class="reason">To make the site feel audacious without breaking minimalism: the hero title uses a subtle animated gradient text fill in Aurora mode; the Brutalist mode strips all softness; the Kinetic mode makes the board feel alive. These are opt-in via the theme switcher, so the default experience remains calm.</div>
+</div>
+
+<div class="decision made">
+  <span class="tag">ACCESSIBILITY</span>
+  <strong>Reduced motion respected, focus states maintained</strong>
+  <div class="reason">All animations check prefers-reduced-motion. The popup traps focus while open. The carousel uses semantic buttons for navigation. Theme changes apply instantly without page reload.</div>
+</div>
+
+<h2>Decisions Explicitly Not Made / Rejected</h2>
+
+<div class="decision notmade">
+  <span class="tag">REJECTED</span>
+  <strong>No full-page background video or WebGL</strong>
+  <div class="reason">Would hurt performance and contradict the minimalist focus. The aurora CSS gradient is enough visual interest.</div>
+</div>
+
+<div class="decision notmade">
+  <span class="tag">REJECTED</span>
+  <strong>No sidebar navigation or mega-menu</strong>
+  <div class="reason">This is a single-page board. Adding navigation would dilute the to-do list focus. All actions (theme, email) are inline or in overlays.</div>
+</div>
+
+<div class="decision notmade">
+  <span class="tag">REJECTED</span>
+  <strong>No full task detail pages</strong>
+  <div class="reason">The current task cards show all relevant info at a glance. Expanding into detail pages would move away from the dashboard/board metaphor and increase complexity unnecessarily.</div>
+</div>
+
+<div class="decision notmade">
+  <span class="tag">REJECTED</span>
+  <strong>No dark-mode toggle separate from themes</strong>
+  <div class="reason">Midnight theme already covers the dark aesthetic. A separate toggle would create a matrix of states (theme × mode) that is hard to maintain. Users who want dark can pick Midnight.</div>
+</div>
+
+<div class="decision notmade">
+  <span class="tag">REJECTED</span>
+  <strong>No drag-and-drop reordering</strong>
+  <div class="reason">The source of truth is Notion. Allowing DnD on the public mirror would create a false expectation that changes persist. The read-only mirror is a feature, not a bug.</div>
+</div>
+
+<div class="decision notmade">
+  <span class="tag">REJECTED</span>
+  <strong>No analytics dashboard or heavy tracking</strong>
+  <div class="reason">Vercel Analytics is already included. Adding more tracking scripts would hurt performance and privacy. Retention is driven by design and content, not surveillance.</div>
+</div>
+
+
+<div class="decision made">
+  <span class="tag">THEME</span>
+  <strong>Paper — tactile warm aesthetic</strong>
+  <div class="reason">Warm cream background with subtle dot-grid paper texture (CSS radial-gradient), Georgia serif type, dashed borders, ink-colored text. No aurora. Feels like a physical task list on heavy paper. Perspective = analog/tactile minimalism.</div>
+</div>
+
+<div class="decision made">
+  <span class="tag">THEME</span>
+  <strong>Terminal — retro CRT phosphor aesthetic</strong>
+  <div class="reason">Pure black canvas, phosphor-green text, monospace everywhere, repeating CSS scanlines, glowing hover shadows. All chrome stripped to lines and blocks. Perspective = retro-computing/raw data. No aurora; scanlines overlay the entire viewport.</div>
+</div>
+
+</body>
+</html>
+
+

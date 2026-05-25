@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import BoardCarousel from "../components/BoardCarousel";
+import EmailPopup from "../components/EmailPopup";
+import ThemeSwitcher from "../components/ThemeSwitcher";
 
 type BucketId = "side" | "todo" | "urgent" | "progress" | "complete";
 
@@ -68,7 +71,7 @@ export default function TaskLight() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<string | null>(null);
   const [tickIdx, setTickIdx] = useState(0);
-  const [year, setYear] = useState<number | null>(null);
+  const [year] = useState<number | null>(() => new Date().getFullYear());
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +102,6 @@ export default function TaskLight() {
   }, []);
 
   useEffect(() => {
-    setYear(new Date().getFullYear());
     const id = setInterval(() => setTickIdx((i) => i + 1), 4200);
     return () => clearInterval(id);
   }, []);
@@ -149,6 +151,48 @@ export default function TaskLight() {
 
   const tick = recent.length > 0 ? recent[tickIdx % recent.length] : null;
 
+  function renderColumn(b: Bucket) {
+    const items = tasks.filter((t) => t.bucket === b.id);
+    const total = MAIN_BUCKETS.reduce((sum, x) => sum + tasks.filter((t) => t.bucket === x.id).length, 0);
+    const fill = total > 0 ? (items.length / total) * 100 : 0;
+
+    return (
+      <div className="col" data-bucket={b.id} key={b.id}>
+        <div className="col-head">
+          <div className="col-title">
+            <span className="col-swatch"></span>
+            {b.label}
+          </div>
+          <span className="chip">{items.length}</span>
+        </div>
+        <div
+          className="bucket"
+          data-bucket={b.id}
+          style={{ ["--fill" as string]: `${fill}%` } as React.CSSProperties}
+        >
+          {items.map((t) => (
+            <div key={t.id} className="task">
+              <div className="check"></div>
+              <div className="t-title">{t.t}</div>
+              {b.id === "progress" && (
+                <div className="t-bar">
+                  <i></i>
+                </div>
+              )}
+              <div className="t-meta">
+                <span className="who">
+                  <span className="avatar">{t.whoInitials}</span>
+                  {t.whoName}
+                </span>
+                <span>{t.age}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="aurora" aria-hidden />
@@ -158,90 +202,60 @@ export default function TaskLight() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/anthrolytic-wordmark.png" alt="Anthrolytic" />
           </div>
-          <div className="live">
-            <span className="dot"></span>
-            <span>Live · Synced {syncAgoLabel(lastSync)} ago</span>
+          <div className="top-right">
+            <div className="live" title="Synced from Notion in real time">
+              <span className="dot"></span>
+              <span>Live · Synced {syncAgoLabel(lastSync)} ago</span>
+            </div>
+            <ThemeSwitcher />
           </div>
         </header>
 
         {loaded && configured === false && (
           <div
             style={{
-              margin: "8px 0 0",
-              padding: "12px 14px",
+              marginTop: 32,
+              padding: "14px 18px",
+              borderRadius: 12,
               border: "1px solid var(--line)",
-              borderLeft: "3px solid var(--purple)",
-              borderRadius: 10,
+              background: "#fafafa",
               fontSize: 13,
-              color: "var(--ink-2)",
-              background: "var(--purple-50)",
+              color: "var(--ink-3)",
             }}
           >
-            Notion connection not configured. Set <code>NOTION_TOKEN</code> and{" "}
-            <code>NOTION_DATABASE_ID</code> in <code>.env.local</code>, then restart.
+            Notion not configured — set <code>NOTION_TOKEN</code> and{" "}
+            <code>NOTION_DATABASE_ID</code> in <code>.env.local</code>.
           </div>
         )}
-        {loaded && configured && errorMsg && (
+        {loaded && errorMsg && configured !== false && (
           <div
             style={{
-              margin: "8px 0 0",
-              padding: "12px 14px",
-              border: "1px solid var(--line)",
-              borderLeft: "3px solid #d4a017",
-              borderRadius: 10,
+              marginTop: 32,
+              padding: "14px 18px",
+              borderRadius: 12,
+              border: "1px solid #FECACA",
+              background: "#FEF2F2",
               fontSize: 13,
-              color: "var(--ink-2)",
-              background: "#fffbea",
+              color: "#991B1B",
             }}
           >
-            Notion error — {errorMsg}
+            {errorMsg}
           </div>
         )}
 
         <div className="board-head">
-          <h1>To do</h1>
+          <h1>
+            <span className="hero-line">Building</span>{" "}
+            <span className="hero-line hero-accent">in public</span>
+          </h1>
         </div>
 
-        <div className="board">
-          {MAIN_BUCKETS.map((b) => {
-            const items = tasks.filter((t) => t.bucket === b.id);
-            const fill = tasks.length === 0 ? 0 : Math.min(90, 12 + items.length * 9);
-            return (
-              <div key={b.id} className="col" data-bucket={b.id}>
-                <div className="col-head">
-                  <div className="col-title">
-                    <span className="col-swatch"></span>
-                    {b.label}
-                  </div>
-                  <span className="chip">{items.length}</span>
-                </div>
-                <div
-                  className="bucket"
-                  data-bucket={b.id}
-                  style={{ ["--fill" as string]: `${fill}%` } as React.CSSProperties}
-                >
-                  {items.map((t) => (
-                    <div key={t.id} className="task">
-                      <div className="check"></div>
-                      <div className="t-title">{t.t}</div>
-                      {b.id === "progress" && (
-                        <div className="t-bar">
-                          <i></i>
-                        </div>
-                      )}
-                      <div className="t-meta">
-                        <span className="who">
-                          <span className="avatar">{t.whoInitials}</span>
-                          {t.whoName}
-                        </span>
-                        <span>{t.age}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div className="board board-desktop">
+          {MAIN_BUCKETS.map((b) => renderColumn(b))}
+        </div>
+
+        <div className="board-mobile">
+          <BoardCarousel buckets={MAIN_BUCKETS} renderBucket={renderColumn} />
         </div>
 
         <section className="cta-wrap">
@@ -277,6 +291,8 @@ export default function TaskLight() {
             <a className="site" href="https://anthrolytic.co">
               anthrolytic.co
             </a>
+            {" · "}
+            <span className="notion-attribution" title="Tasks mirrored from Notion">Synced from Notion</span>
           </div>
           <div className="socials">
             <a
@@ -337,6 +353,18 @@ export default function TaskLight() {
           </span>
         </div>
       )}
+
+      <EmailPopup />
     </>
   );
 }
+
+
+
+
+
+
+
+
+
+
